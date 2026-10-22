@@ -1,26 +1,35 @@
 import logging
 import httpx
 import os
+import threading
+from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# توکن تلگرام
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-# کلید گوگل
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# آدرس رسمی گوگل برای مدل‌های Gemini
 API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 MODEL = "gemini-1.5-flash"
 
-# خواندن پرامپت (بدون کوتاه شدن)
+# --- سرور فیک Flask برای راضی نگه داشتن Render ---
+web_app = Flask(__name__)
+
+@web_app.route('/')
+def health_check():
+    return "Kovak Bot is alive!", 200
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port)
+# ------------------------------------------------
+
 try:
     with open("persona.txt", "r", encoding="utf-8") as f:
         SYSTEM_PROMPT = f.read()
 except FileNotFoundError:
     SYSTEM_PROMPT = "تو یک دستیار هوشمند هستی."
 
-# تعداد پیام‌هایی که در حافظه می‌مونه
 MAX_HISTORY_MESSAGES = 10
 user_histories = {}
 
@@ -60,8 +69,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         async with httpx.AsyncClient() as client:
             response = await client.post(API_URL, headers=headers, json=payload, timeout=60.0)
             if response.status_code != 200:
-                error_detail = response.text
-                await update.message.reply_text(f"خطای گوگل (کد {response.status_code}):\n{error_detail}")
+                await update.message.reply_text(f"خطای گوگل: {response.text}")
                 return
                 
             data = response.json()
@@ -72,12 +80,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"خطای شبکه: {e}")
 
 def main():
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("reset", reset_conversation))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    # اجرای وب‌سرور فیک در پس‌زمینه
+    threading.Thread(target=run_web_server, daemon=True).start()
+
+    # اجرای ربات تلگرام
+    telegram_app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    telegram_app.add_handler(CommandHandler("start", start))
+    telegram_app.add_handler(CommandHandler("reset", reset_conversation))
+    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     print("Bot is running...")
-    app.run_polling(drop_pending_updates=True)
+    # drop_pending_updates برای اینکه پیام‌های گیرکرده قبلی رو نادیده بگیره
+    telegram_app.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
     main()
