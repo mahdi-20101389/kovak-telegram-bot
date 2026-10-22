@@ -5,10 +5,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-API_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "llama-3.1-8b-instant"
+API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+MODEL = "gemini-1.5-flash"
 
 try:
     with open("persona.txt", "r", encoding="utf-8") as f:
@@ -16,7 +16,7 @@ try:
 except FileNotFoundError:
     SYSTEM_PROMPT = "تو یک دستیار هوشمند هستی."
 
-MAX_HISTORY_MESSAGES = 5
+MAX_HISTORY_MESSAGES = 10
 user_histories = {}
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -46,7 +46,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         history = user_histories[chat_id]
 
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {GEMINI_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {"model": MODEL, "messages": history}
@@ -54,7 +54,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(API_URL, headers=headers, json=payload, timeout=60.0)
-            response.raise_for_status()
+            if response.status_code != 200:
+                error_detail = response.text
+                await update.message.reply_text(f"خطای گوگل (کد {response.status_code}):\n{error_detail}")
+                return
+                
             data = response.json()
             reply = data['choices'][0]['message']['content']
             history.append({"role": "assistant", "content": reply})
