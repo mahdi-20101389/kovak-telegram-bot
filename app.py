@@ -10,7 +10,7 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-MODEL = "gemini-1.5-flash"
+MODEL = "gemini-2.0-flash"
 
 # --- سرور فیک Flask برای راضی نگه داشتن Render ---
 web_app = Flask(__name__)
