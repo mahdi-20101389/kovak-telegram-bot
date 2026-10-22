@@ -5,10 +5,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-FREELLMAPI_KEY = os.environ.get("FREELLMAPI_KEY")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
-API_URL = "https://freellmapi-d38l.onrender.com/v1/chat/completions"
-MODEL = "auto"
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL = "llama-3.3-70b-versatile"
 
 try:
     with open("persona.txt", "r", encoding="utf-8") as f:
@@ -46,7 +46,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         history = user_histories[chat_id]
 
     headers = {
-        "Authorization": f"Bearer {FREELLMAPI_KEY}",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {"model": MODEL, "messages": history}
