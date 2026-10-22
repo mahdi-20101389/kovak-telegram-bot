@@ -9,8 +9,9 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+# استفاده از مدل رسمی و پایدار گوگل
 API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-MODEL = "gemini-3.8-flash"
+MODEL = "gemini-2.5-flash"
 
 web_app = Flask(__name__)
 
@@ -64,10 +65,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     payload = {"model": MODEL, "messages": history}
 
     try:
+        # افزایش تایم‌اوت به ۱۲۰ ثانیه برای پرامپت‌های بزرگ
         async with httpx.AsyncClient() as client:
-            response = await client.post(API_URL, headers=headers, json=payload, timeout=60.0)
+            response = await client.post(API_URL, headers=headers, json=payload, timeout=120.0)
             if response.status_code != 200:
-                await update.message.reply_text(f"خطای گوگل: {response.text}")
+                await update.message.reply_text(f"خطای گوگل ({response.status_code}):\n{response.text}")
                 return
                 
             data = response.json()
@@ -75,10 +77,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             history.append({"role": "assistant", "content": reply})
             await update.message.reply_text(reply)
     except Exception as e:
-        await update.message.reply_text(f"خطای شبکه: {e}")
+        # نمایش دقیق نوع خطا (مثلا ReadTimeout)
+        error_type = type(e).__name__
+        await update.message.reply_text(f"خطای شبکه ({error_type}): {e}")
 
 def main():
-    print("!!! VERSION 3.8 IS RUNNING !!!")
+    print("!!! VERSION 2.5 IS RUNNING !!!")
     threading.Thread(target=run_web_server, daemon=True).start()
 
     telegram_app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
