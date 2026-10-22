@@ -4,18 +4,23 @@ import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
+# توکن تلگرام
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+# کلید گوگل
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+# آدرس رسمی گوگل برای مدل‌های Gemini
 API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 MODEL = "gemini-1.5-flash"
 
+# خواندن پرامپت (بدون کوتاه شدن)
 try:
     with open("persona.txt", "r", encoding="utf-8") as f:
         SYSTEM_PROMPT = f.read()
 except FileNotFoundError:
     SYSTEM_PROMPT = "تو یک دستیار هوشمند هستی."
 
+# تعداد پیام‌هایی که در حافظه می‌مونه
 MAX_HISTORY_MESSAGES = 10
 user_histories = {}
 
@@ -64,7 +69,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             history.append({"role": "assistant", "content": reply})
             await update.message.reply_text(reply)
     except Exception as e:
-        await update.message.reply_text(f"خطا: {e}")
+        await update.message.reply_text(f"خطای شبکه: {e}")
 
 def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
