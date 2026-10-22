@@ -80,6 +80,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"خطای شبکه: {e}")
 
 def main():
+    print("!!! VERSION 2.0 IS RUNNING !!!")
     # اجرای وب‌سرور فیک در پس‌زمینه
     threading.Thread(target=run_web_server, daemon=True).start()
 
